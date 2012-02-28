@@ -1,3 +1,8 @@
+Version 0.2-5
+ 
+  *  Fixed the rpc.serialize method for raw so that it doesn't convert the values 
+     to character strings implicitly via a call go gsub().
+
 Version 0.2-4
   
   *  Removed trailing , in switch() call.

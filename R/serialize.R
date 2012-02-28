@@ -55,7 +55,7 @@ cast <- function(x) {
 
 setMethod("rpc.serialize", "raw",
            function(x, ...) {
-              x = gsub("\\n", "", x)
+#              x = gsub("\\n", "", x)
               val = base64Encode(x)
               newXMLNode("value", newXMLNode("base64", val))
            })
@@ -66,8 +66,12 @@ setMethod("rpc.serialize", "vector",
               x = cast(x)
               
               if(length(names(x))) {
-warning("Skipping named vector!")
-              } else {
+                warning("Skipping names on vector!")
+                names(x) = NULL
+              }
+
+#              else
+              {
                 if(length(x) == 1)
                   newXMLNode("value", newXMLNode(type, if(type == "string") newXMLCDataNode(x) else x))
                 else {
