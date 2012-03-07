@@ -2,8 +2,8 @@
 xml.rpc =
 function(url, method, ..., .args = list(...),
           .opts = list(),
-          .defaultOpts = list(httpheader = c('Content-Type' = "text/xml")),
-          .convert = TRUE, .curl = getCurlHandle())
+          .defaultOpts = list(httpheader = c('Content-Type' = "text/xml"), followlocation = TRUE, useragent = useragent),
+          .convert = TRUE, .curl = getCurlHandle(), useragent = "R-XMLRPC")
 {
     # Turn the method and arguments to an RPC body.
   body = createBody(method,  .args)
@@ -12,8 +12,17 @@ function(url, method, ..., .args = list(...),
   .defaultOpts[["postfields"]] = saveXML(body)
   if(length(.opts))
      .defaultOpts[names(.opts)] = .opts
-  
+
+  rdr = dynCurlReader(.curl, baseURL = url)
+  .defaultOpts[["headerfunction"]] = rdr$update
   ans = postForm(url, .opts = .defaultOpts, style = "POST", curl = .curl)
+
+  hdr = parseHTTPHeader(rdr$header())
+  if(as.integer(hdr[["status"]]) %/% 100 !=  2) {
+       # call an RCurl error generator function.      
+     stop("Problems")
+  }
+  ans = rdr$value()
 
    # Now either convert using the default converter fnction (convertToR)
    # or return as is or allow the caller to specify a function to use for conversion.
@@ -39,11 +48,31 @@ function(method, args)
 
 setGeneric("rpc.serialize", function(x, ...) standardGeneric("rpc.serialize"))
 
+setMethod("rpc.serialize", "ANY",
+           function(x, ...) {
+
+              if(isS4(x))
+                return(rpc.serialize.S4Object(x, ...))
+
+              stop("Not sure how to convert this type of object to XMLRPC format")
+           })
+
+rpc.serialize.S4Object =
+function(x, ...)
+{
+  els = slotNames(x)
+  rpc.serialize(structure(lapply(els, function(id) slot(x, id)), names = els), ...)
+}
+
+
 basicTypeMap =
   c("integer" = "i4",
     "double" = "double",
     "character" = "string",
     "logical" = "boolean",
+    "POSIXt" = "dateTime.iso8601",
+    "POSIXct" = "dateTime.iso8601",
+    "Date" = "dateTime.iso8601",    
     "raw" = "base64")
 
 cast <- function(x) {
@@ -53,11 +82,43 @@ cast <- function(x) {
     x
 }
 
+setOldClass("AsIs")
+
+setMethod("rpc.serialize", "AsIs",
+           function(x) {
+             type = basicTypeMap[typeof(x)]
+             vectorArray(x, type)
+           })
+
+setMethod("rpc.serialize", "NULL",
+           function(x, ...) {
+             rpc.serialize(list())
+           })
+
 setMethod("rpc.serialize", "raw",
            function(x, ...) {
 #              x = gsub("\\n", "", x)
               val = base64Encode(x)
               newXMLNode("value", newXMLNode("base64", val))
+           })
+
+
+setMethod("rpc.serialize", "Date",
+           function(x, ...) {
+             val = format(x, "%Y%m%dT%H:%H:%S")
+             if(length(x) == 1)
+                newXMLNode("value", newXMLNode("dateTime.iso8601", val))
+             else
+                vectorArray(val, basicTypeMap["Date"])
+           })
+
+setMethod("rpc.serialize", "POSIXt",
+           function(x, ...) {
+             val = format(as.POSIXct(x), "%Y%m%dT%H:%H:%S")
+             if(length(x) == 1)
+                newXMLNode("value", newXMLNode("dateTime.iso8601", val))
+             else
+                vectorArray(val, basicTypeMap["POSIXt"])               
            })
 
 setMethod("rpc.serialize", "vector",
@@ -75,15 +136,22 @@ setMethod("rpc.serialize", "vector",
                 if(length(x) == 1)
                   newXMLNode("value", newXMLNode(type, if(type == "string") newXMLCDataNode(x) else x))
                 else {
-                  top = newXMLNode("value")
-                  a = newXMLNode("array", parent = top)
-                  data = newXMLNode("data", parent = a)
-                  sapply(x, function(x) newXMLNode("value", newXMLNode(type, if(type == "string") newXMLCDataNode(x) else x), parent = data))
-                  top
+                  vectorArray(x, type)
                 }
               }
            })
 
+
+vectorArray =
+function(x, type)
+{
+  top = newXMLNode("value")
+  a = newXMLNode("array", parent = top)
+  data = newXMLNode("data", parent = a)
+  sapply(x, function(x) newXMLNode("value", newXMLNode(type, if(type == "string") newXMLCDataNode(x) else x), parent = data))
+#  sapply(x, function(x)  newXMLNode(type, if(type == "string") newXMLCDataNode(x) else x, parent = data))
+  top
+}
 
 setMethod("rpc.serialize", "list",
            function(x, ...) {
@@ -93,7 +161,9 @@ setMethod("rpc.serialize", "list",
                   sapply(names(x), function(id) {
                                      type = basicTypeMap[typeof(x[[id]])]
                                      newXMLNode("member", newXMLNode("name", id),
-                                                          newXMLNode("value", rpc.serialize(x[[id]])),
+                                                 rpc.serialize(x[[id]]
+#                                                          newXMLNode("value", rpc.serialize(x[[id]])
+                                               ),
                                                 parent = a)
                                    })
                   a
@@ -117,7 +187,9 @@ setMethod('convertToR', 'XMLInternalDocument', function(node)
     fault = getNodeSet(node,path="//methodResponse/fault/value/struct")
     if (length(fault) > 0) {
           fault = xmlRPCToR(fault[[1]])
-          stop("faultCode: ",  fault$faultCode, " faultString: ", fault$faultString)
+          e = simpleError(paste("faultCode: ",  fault$faultCode, " faultString: ", fault$faultString))
+          class(e) = c("XMLRPCError", class(e))
+          stop(e)
     }
     a = xpathApply(node, "//param/value", xmlRPCToR)
     if(length(a) == 1)

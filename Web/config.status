@@ -595,9 +595,9 @@ echo 'BEGIN {' >"$ac_tmp/subs1.awk" &&
 cat >>"$ac_tmp/subs1.awk" <<\_ACAWK &&
 S["LTLIBOBJS"]=""
 S["LIBOBJS"]=""
-S["DATE"]="09 May 2011"
-S["TAR_FILE"]="XMLRPC_0.2-4.tar.gz"
-S["VERSION"]="0.2-4"
+S["DATE"]="28 February 2012"
+S["TAR_FILE"]="XMLRPC_0.2-5.tar.gz"
+S["VERSION"]="0.2-5"
 S["PKG_NAME"]="XMLRPC"
 S["target_alias"]=""
 S["host_alias"]=""
