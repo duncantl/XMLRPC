@@ -9,8 +9,11 @@
 }
 \usage{
 xml.rpc(url, method, ..., .args = list(...), .opts = list(),
-         .defaultOpts = list(httpheader = c("Content-Type" = "text/xml")),
-         .convert = TRUE, .curl = getCurlHandle())
+        .defaultOpts = list(httpheader = c("Content-Type" = "text/xml"),
+                            followlocation = TRUE,
+                            useragent = useragent),
+         .convert = TRUE, .curl = getCurlHandle(),
+          useragent = "R-XMLRPC")
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -30,7 +33,10 @@ xml.rpc(url, method, ..., .args = list(...), .opts = list(),
     or alternatively a function which  is called with a string
     giving the body of the HTTP response of the XML-RPC call.}
   \item{.curl}{a CURLHandle object that the caller can specify to allow
-    reusing existing handles and connections. This can greatly improve efficiency.}
+    reusing existing handles and connections. This can greatly improve
+    efficiency.}
+  \item{useragent}{the string identifying the application that is
+    reported to the Web server as making the request.}
 }
 
 \value{
