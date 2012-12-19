@@ -142,13 +142,40 @@ setMethod("rpc.serialize", "vector",
            })
 
 
+FormatStrings = c(numeric = "%f", integer = "%d", logical = "%s",
+                   i4 = "%d", double = "%f",
+                  string = "%s", Date = "%s",  POSIXt = "%s", POSIXct = "%s")
+
 vectorArray =
 function(x, type)
 {
   top = newXMLNode("value")
   a = newXMLNode("array", parent = top)
   data = newXMLNode("data", parent = a)
-  sapply(x, function(x) newXMLNode("value", newXMLNode(type, if(type == "string") newXMLCDataNode(x) else x), parent = data))
+#  sapply(x, function(x) newXMLNode("value", newXMLNode(type, if(type == "string") newXMLCDataNode(x) else x), parent = data))
+
+  tmpl = if(type == "string")  # is.character(x))
+            sprintf("<value><%s><![CDATA[%%s]]></%s></value>", type, type)
+         else if(type == "dateTime.iso8601") {
+            if(is(x, "Date"))
+               x = format(x, "%Y%m%dT00:00:00")              
+            else
+               x = format(as.POSIXct(x), "%Y%m%dT%H:%H:%S")
+            sprintf("<value><%s>%%s</%s></value>", type, type)
+         } else {
+           if(type == "double") {
+              x = as.character(x)
+              pct = "%s"
+           } else
+             pct = FormatStrings[type]
+           
+           if(is.na(pct)) pct = "%s"
+           sprintf("<value><%s>%s</%s></value>", type, pct, type)
+         }
+  
+  txt = sprintf(tmpl, x)
+  parseXMLAndAdd(txt, data)
+  
 #  sapply(x, function(x)  newXMLNode(type, if(type == "string") newXMLCDataNode(x) else x, parent = data))
   top
 }

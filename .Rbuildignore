@@ -1,3 +1,6 @@
 XMLRPC/inst
 .*inst.*
 .*autom4te.cache.*
+paulShannon.R
+testChanges.R
+
