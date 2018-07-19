@@ -198,7 +198,7 @@ setMethod("rpc.serialize", "list",
                   a = newXMLNode("array")
                   data = newXMLNode("data", parent = a)
                   sapply(x, function(x) {
-                                elName = basicTypeMap[typeof(x)]
+                                # elName = basicTypeMap[typeof(x)]
                                 newXMLNode("value", rpc.serialize(x),parent = data)                      
 # newXMLNode("value", newXMLNode(elName, if(elName == "string") newXMLCDataNode(x) else x,
 #                                                               parent = data))
