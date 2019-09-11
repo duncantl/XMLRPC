@@ -20,7 +20,7 @@ function(url, method, ..., .args = list(...),
   hdr = parseHTTPHeader(rdr$header())
   if(as.integer(hdr[["status"]]) %/% 100 !=  2) {
        # call an RCurl error generator function.      
-     stop("Problems")
+     stop(sprintf("Error %s: %s", hdr[["status"]], hdr[["statusMessage"]]))
   }
   ans = rdr$value()
 
