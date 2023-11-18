@@ -142,7 +142,7 @@ setMethod("rpc.serialize", "vector",
            })
 
 
-FormatStrings = c(numeric = "%f", integer = "%d", logical = "%s",
+FormatStrings = c(numeric = "%f", int = "%d", integer = "%d", logical = "%s",
                    i4 = "%d", double = "%f",
                   string = "%s", Date = "%s",  POSIXt = "%s", POSIXct = "%s")
 
