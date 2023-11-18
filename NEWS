@@ -1,0 +1,4 @@
+0.3-1
+
+*   Fix from Joseph Guillaume to recursivel call rpc.serialize() on elements of a list.
+

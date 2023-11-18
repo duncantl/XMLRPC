@@ -1,5 +1,5 @@
 Package: XMLRPC
-Version: 0.3-0
+Version: 0.3-1
 Title: Remote Procedure Call (RPC) via XML in R
 Description: A simple implementation of XML-RPC for R.
 Imports: methods, RCurl, XML
